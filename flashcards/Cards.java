@@ -1,13 +1,13 @@
 package flashcards;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class Cards {
-    private Map<String, String> cards;
+     Map<String, String> cards;
 
     public Cards() {
-        cards = new HashMap<>();
+        cards = new LinkedHashMap<>();
     }
 
     public void addCard(String face, String back) {
@@ -18,4 +18,6 @@ public class Cards {
     public String getBack(String face) {
         return cards.get(face);
     }
+
+
 }
