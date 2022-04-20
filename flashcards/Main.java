@@ -13,6 +13,19 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         Cards cards = new Cards();
         logger = new Logger();
+
+        boolean mustExport = false;
+        String exportFile = "";
+        for (int i = 0; i < args.length - 1; i += 2) {
+            if ("-import".equals(args[i])) {
+                importCardFromFile(cards, args[i + 1]);
+            }
+            if ("-export".equals(args[i])) {
+                mustExport = true;
+                exportFile = args[i + 1];
+            }
+        }
+
         while (true) {
             System.out.println(logger.log("Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):"));
             String command = logger.log(scanner.nextLine());
@@ -31,15 +44,8 @@ public class Main {
                     break;
                 case "import":
                     System.out.println(logger.log("File name:"));
-                    try {
-                        File file = new File(logger.log(scanner.nextLine()));
-                        Scanner scanner1 = new Scanner(file);
-                        System.out.println(logger.log(importedCards(scanner1, cards) + " cards have been loaded."));
-                        scanner1.close();
-
-                    } catch (FileNotFoundException e) {
-                        System.out.println(logger.log("File not found."));
-                    }
+                    String filePath = logger.log(scanner.nextLine());
+                    importCardFromFile(cards, filePath);
                     break;
                 case "export":
                     System.out.println(logger.log("File name:"));
@@ -69,9 +75,24 @@ public class Main {
                     printHardest(cards.getMaxErrors());
                     break;
                 case "exit":
+                    if (mustExport) {
+                        System.out.println(logger.log(exportedCards(exportFile, cards.terms) + " cards have been saved."));
+                    }
                     System.out.println(logger.log("Bye bye!"));
                     return;
             }
+        }
+    }
+
+    private static void importCardFromFile(Cards cards, String filePath) {
+        try {
+            File file = new File(filePath);
+            Scanner scanner1 = new Scanner(file);
+            System.out.println(logger.log(importedCards(scanner1, cards) + " cards have been loaded."));
+            scanner1.close();
+
+        } catch (FileNotFoundException e) {
+            System.out.println(logger.log("File not found."));
         }
     }
 
@@ -120,8 +141,8 @@ public class Main {
             }
             writer.close();
         } catch (IOException e) {
-            System.out.println(logger.log(e.getStackTrace().toString()));;
-        }
+            System.out.println(logger.log(e.getStackTrace().toString()));
+             }
         return count;
     }
 
