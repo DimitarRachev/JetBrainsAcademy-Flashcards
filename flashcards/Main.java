@@ -32,7 +32,7 @@ public class Main {
                 case "import":
                     System.out.println(logger.log("File name:"));
                     try {
-                        File file = new File(scanner.nextLine());
+                        File file = new File(logger.log(scanner.nextLine()));
                         Scanner scanner1 = new Scanner(file);
                         System.out.println(logger.log(importedCards(scanner1, cards) + " cards have been loaded."));
                         scanner1.close();

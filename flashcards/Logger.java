@@ -22,9 +22,6 @@ public class Logger {
         for (String s : log) {
             writer.write(s + System.lineSeparator());
         }
-        //TODO find where is the lost line, no there is no need to use that cheat
-        writer.write("asd" + System.lineSeparator());
-        writer.flush();
         writer.close();
     }
 }
