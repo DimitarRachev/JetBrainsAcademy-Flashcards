@@ -7,52 +7,94 @@ import java.io.IOException;
 import java.util.*;
 
 public class Main {
+    static Logger logger;
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         Cards cards = new Cards();
+        logger = new Logger();
         while (true) {
-            System.out.println("Input the action (add, remove, import, export, ask, exit):");
-            String command = scanner.nextLine();
+            System.out.println(logger.log("Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):"));
+            String command = logger.log(scanner.nextLine());
             switch (command) {
                 case "add":
                     addCard(scanner, cards);
                     break;
                 case "remove":
-                    System.out.println("Which card?");
-                    String card = scanner.nextLine();
+                    System.out.println(logger.log("Which card?"));
+                    String card = logger.log(scanner.nextLine());
                     if (cards.remove(card)) {
-                        System.out.println("The card has been removed.");
+                        System.out.println(logger.log("The card has been removed."));
                     } else {
-                        System.out.println("Can't remove \"" + card + "\": there is no such card.");
+                        System.out.println(logger.log("Can't remove \"" + card + "\": there is no such card."));
                     }
                     break;
                 case "import":
-                    System.out.println("File name:");
+                    System.out.println(logger.log("File name:"));
                     try {
                         File file = new File(scanner.nextLine());
                         Scanner scanner1 = new Scanner(file);
-                        System.out.println(importedCards(scanner1, cards) + " cards have been loaded.");
+                        System.out.println(logger.log(importedCards(scanner1, cards) + " cards have been loaded."));
                         scanner1.close();
 
                     } catch (FileNotFoundException e) {
-                        System.out.println("File not found.");
+                        System.out.println(logger.log("File not found."));
                     }
                     break;
                 case "export":
-                    System.out.println("File name:");
-                    String fileName = scanner.nextLine();
-                    System.out.println(exportedCards(fileName, cards.cards) + " cards have been saved.");
+                    System.out.println(logger.log("File name:"));
+                    String fileName = logger.log(scanner.nextLine());
+                    System.out.println(logger.log(exportedCards(fileName, cards.terms) + " cards have been saved."));
                     break;
                 case "ask":
-                    System.out.println("How many times to ask?");
-                    int n = Integer.parseInt(scanner.nextLine());
+                    System.out.println(logger.log("How many times to ask?"));
+                    int n = Integer.parseInt(logger.log(scanner.nextLine()));
                     askCards(n, cards, scanner);
                     break;
+                case "log":
+                    System.out.println(logger.log("File name:"));
+                    String name = logger.log(scanner.nextLine());
+                    try {
+                        logger.saveLog(name);
+                        System.out.println(logger.log("The log has been saved."));
+                    } catch (IOException e) {
+                        System.out.println(logger.log("Cannot save the log."));
+                    }
+                    break;
+                case "reset stats":
+                    cards.resetStats();
+                    System.out.println(logger.log("Card statistics have been reset."));
+                    break;
+                case "hardest card":
+                    printHardest(cards.getMaxErrors());
+                    break;
                 case "exit":
-                    System.out.println("Bye bye!");
+                    System.out.println(logger.log("Bye bye!"));
                     return;
             }
         }
+    }
+
+    private static void printHardest(List<Card> maxErrors) {
+        if (maxErrors == null) {
+            System.out.println(logger.log("There are no cards with errors."));
+        } else if (maxErrors.size() == 1) {
+            System.out.println(logger.log("The hardest card is \"" + maxErrors.get(0).getTerm() + "\"."));
+            System.out.println(logger.log("The hardest card is \"" + maxErrors.get(0).getTerm() + "\". You have " + maxErrors.get(0).getErrors() + " errors answering it."));
+        } else {
+            System.out.println(logger.log("The hardest cards are " + getHardestTermsToString(maxErrors) + ". You have " + maxErrors.get(0).getErrors() + " errors answering them."));
+        }
+    }
+
+    private static String getHardestTermsToString(List<Card> maxErrors) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < maxErrors.size(); i++) {
+            sb.append("\"").append(maxErrors.get(i).getTerm()).append("\"");
+            if (i < maxErrors.size() - 1) {
+                sb.append(", ");
+            }
+        }
+        return sb.toString();
     }
 
     private static int importedCards(Scanner scanner, Cards cards) {
@@ -61,62 +103,65 @@ public class Main {
             String[] input = scanner.nextLine().split("-");
             String face = input[0];
             String back = input[1];
-            cards.addCard(face, back);
+            int errors = Integer.parseInt(input[2]);
+            cards.addCard(face, back, errors);
             count++;
         }
         return count;
     }
 
-    private static int exportedCards(String fileName, Map<String, String> map) {
+    private static int exportedCards(String fileName, Map<String, Card> map) {
         int count = 0;
         try {
             FileWriter writer = new FileWriter(fileName);
-            for (var entry : map.entrySet()) {
-                writer.write(entry.getKey() + "-" + entry.getValue() + System.lineSeparator());
+            for (Card card : map.values()) {
+                writer.write(card.getTerm() + "-" + card.getDefinition() + "-" + card.getErrors() + System.lineSeparator());
                 count++;
             }
             writer.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println(logger.log(e.getStackTrace().toString()));;
         }
         return count;
     }
 
     private static void askCards(int n, Cards cards, Scanner scanner) {
-        for (var entry : cards.cards.entrySet()) {
+        for (var entry : cards.terms.entrySet()) {
             if (n-- > 0) {
-                System.out.println("Print the definition of \"" + entry.getKey() + "\":");
-                String answer = scanner.nextLine();
-                if (answer.equals(entry.getValue())) {
-                    System.out.println("Correct!");
-                } else if (cards.reverseCards.containsKey(answer)) {
-                    System.out.println("Wrong. The right answer is \"" + entry.getValue() + "\", but your definition is correct for \"" + cards.reverseCards.get(answer) + "\".");
+                System.out.println(logger.log("Print the definition of \"" + entry.getValue().getTerm() + "\":"));
+                String answer = logger.log(scanner.nextLine());
+                if (answer.equals(entry.getValue().getDefinition())) {
+                    System.out.println(logger.log("Correct!"));
+                } else if (cards.definitions.containsKey(answer)) {
+                    System.out.println(logger.log("Wrong. The right answer is \"" + entry.getValue().getDefinition() + "\", but your definition is correct for \"" + cards.definitions.get(answer).getTerm() + "\"."));
+                    entry.getValue().addError();
                 } else {
-                    System.out.println("Wrong. The right answer is \"" + entry.getValue() + "\".");
+                    System.out.println(logger.log("Wrong. The right answer is \"" + entry.getValue().getDefinition() + "\"."));
+                    entry.getValue().addError();
                 }
             }
         }
     }
 
     private static boolean addCard(Scanner scanner, Cards cards) {
-        System.out.println("The card:");
-        String face = scanner.nextLine();
-        if (isUniq(face, cards.cards)) {
-            System.out.println("The card \"" + face + "\" already exists.");
+        System.out.println(logger.log("The card:"));
+        String term = logger.log(scanner.nextLine());
+        if (isUniq(term, cards.terms)) {
+            System.out.println(logger.log("The card \"" + term + "\" already exists."));
             return false;
         }
-        System.out.println("The definition of the card:");
-        String back = scanner.nextLine();
-        if (isUniq(back, cards.reverseCards)) {
-            System.out.println("The definition \"" + back + "\" already exists.");
+        System.out.println(logger.log("The definition of the card:"));
+        String definition = logger.log(scanner.nextLine());
+        if (isUniq(definition, cards.definitions)) {
+            System.out.println(logger.log("The definition \"" + definition + "\" already exists."));
             return false;
         }
-        cards.addCard(face, back);
-        System.out.println("The pair (\"" + face + "\":\"" + back + "\") has been added");
+        cards.addCard(term, definition);
+        System.out.println(logger.log("The pair (\"" + term + "\":\"" + definition + "\") has been added"));
         return true;
     }
 
-    private static boolean isUniq(String str, Map<String, String> map) {
+    private static boolean isUniq(String str, Map<String, Card> map) {
         return map.containsKey(str);
     }
 }
