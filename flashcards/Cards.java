@@ -17,7 +17,12 @@ public class Cards {
         reverseCards.put(back, face);
     }
 
-    public String getBack(String face) {
-        return cards.get(face);
+    public boolean remove(String face) {
+        if (cards.containsKey(face)) {
+            reverseCards.remove(cards.get(face));
+            cards.remove(face);
+            return true;
+        }
+        return false;
     }
 }
